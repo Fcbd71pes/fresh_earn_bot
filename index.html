@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Earn Zone</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root { --bg: #0a0a0f; --card: #111118; --card2: #16161f; --border: #2a2a38; --accent: #7c5cfc; --accent2: #fc5c7d; --gold: #f5c842; --green: #2ecc71; --text: #f0f0f8; --muted: #6b6b8a; --radius: 16px; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; overflow-x:hidden; }
+
+body::before {
+  content:''; position:fixed; top:-50%; left:-50%; width:200%; height:200%;
+  background: radial-gradient(ellipse at 20% 20%, rgba(124,92,252,0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 80%, rgba(252,92,125,0.06) 0%, transparent 50%);
+  animation: bgPulse 8s ease-in-out infinite alternate; pointer-events:none; z-index:0;
+}
+@keyframes bgPulse { 0%{transform:scale(1) rotate(0deg)} 100%{transform:scale(1.1) rotate(3deg)} }
+
+.container { max-width:480px; margin:0 auto; padding:16px; position:relative; z-index:1; padding-bottom:90px; }
+
+.header { display:flex; align-items:center; justify-content:space-between; padding:16px 0 20px; }
+.logo { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; background:linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.user-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:16px; font-family:'Syne',sans-serif; font-weight:700; color:#fff; }
+
+.balance-card { background: linear-gradient(135deg, #1a1030 0%, #0f1628 100%); border:1px solid rgba(124,92,252,0.3); border-radius:24px; padding:28px 24px; margin-bottom:20px; position:relative; overflow:hidden; }
+.balance-card::before { content:''; position:absolute; top:-40px; right:-40px; width:140px; height:140px; background:radial-gradient(circle, rgba(124,92,252,0.2), transparent 70%); border-radius:50%; }
+.balance-label { font-size:12px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin-bottom:6px; }
+.balance-amount { font-family:'Syne',sans-serif; font-size:42px; font-weight:800; color:var(--gold); text-shadow:0 0 30px rgba(245,200,66,0.3); margin-bottom:4px; }
+.balance-unit { font-size:13px; color:var(--muted); margin-bottom:20px; }
+.balance-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.stat-box { background:rgba(255,255,255,0.04); border-radius:12px; padding:12px; text-align:center; border:1px solid var(--border); }
+.stat-val { font-family:'Syne',sans-serif; font-weight:700; font-size:18px; color:var(--text); }
+.stat-lbl { font-size:10px; color:var(--muted); margin-top:2px; text-transform:uppercase; letter-spacing:1px; }
+
+.progress-section { margin-bottom:20px; }
+.progress-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.progress-title { font-size:13px; color:var(--muted); }
+.progress-count { font-size:13px; font-weight:600; color:var(--accent); }
+.progress-bar { height:6px; background:var(--border); border-radius:999px; overflow:hidden; }
+.progress-fill { height:100%; background:linear-gradient(90deg, var(--accent), var(--accent2)); border-radius:999px; transition:width 0.5s cubic-bezier(.4,0,.2,1); }
+
+.watch-btn-wrap { margin-bottom:20px; }
+.watch-btn { width:100%; padding:20px; border:none; border-radius:20px; cursor:pointer; background:linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); color:#fff; font-family:'Syne',sans-serif; font-weight:700; font-size:18px; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 8px 30px rgba(124,92,252,0.35); transition:all 0.2s; position:relative; overflow:hidden; }
+.watch-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(rgba(255,255,255,0.1),transparent); border-radius:20px; }
+.watch-btn:active { transform:scale(0.97); box-shadow:0 4px 15px rgba(124,92,252,0.25); }
+.watch-btn.disabled { background:linear-gradient(135deg,#333,#222); box-shadow:none; cursor:not-allowed; opacity:0.6; }
+.watch-btn .earn-badge { background:rgba(255,255,255,0.2); border-radius:999px; padding:4px 10px; font-size:13px; }
+.cooldown-text { text-align:center; font-size:13px; color:var(--muted); margin-top:8px; }
+
+.section-title { font-family:'Syne',sans-serif; font-weight:700; font-size:16px; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.section-title span { width:4px; height:18px; background:linear-gradient(var(--accent),var(--accent2)); border-radius:2px; display:block; }
+
+.ref-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px; }
+.ref-progress { margin-bottom:16px; }
+.ref-bar { height:8px; background:var(--border); border-radius:999px; overflow:hidden; margin-top:8px; }
+.ref-fill { height:100%; background:linear-gradient(90deg,var(--gold),#ff9f43); border-radius:999px; transition:width 0.5s; }
+.ref-link-box { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.ref-link-text { font-size:12px; color:var(--muted); word-break:break-all; flex:1; }
+.copy-btn { background:var(--accent); border:none; color:#fff; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; transition:all 0.2s; font-family:'DM Sans',sans-serif; }
+.copy-btn:active { transform:scale(0.95); }
+.ref-note { font-size:11px; color:var(--muted); margin-top:12px; line-height:1.5; }
+.ref-note b { color:var(--gold); }
+
+.withdraw-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px; }
+.withdraw-locked { text-align:center; padding:10px 0; }
+.lock-icon { font-size:36px; margin-bottom:8px; }
+.lock-text { font-size:13px; color:var(--muted); line-height:1.6; }
+.lock-text b { color:var(--accent2); }
+.withdraw-form { display:none; }
+.withdraw-form.visible { display:block; }
+.input-group { margin-bottom:14px; }
+.input-label { font-size:12px; color:var(--muted); margin-bottom:6px; display:block; text-transform:uppercase; letter-spacing:1px; }
+.input-field { width:100%; background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; color:var(--text); font-size:15px; font-family:'DM Sans',sans-serif; outline:none; transition:border 0.2s; }
+.input-field:focus { border-color:var(--accent); }
+.withdraw-btn { width:100%; padding:16px; background:linear-gradient(135deg,#1a6e3c,#27ae60); border:none; border-radius:12px; color:#fff; font-family:'Syne',sans-serif; font-weight:700; font-size:16px; cursor:pointer; transition:all 0.2s; }
+.withdraw-btn:active { transform:scale(0.97); }
+.withdraw-info { font-size:11px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.5; }
+
+.history-list { display:flex; flex-direction:column; gap:10px; }
+.history-item { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center; }
+.history-left { display:flex; flex-direction:column; gap:3px; }
+.history-amount { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; }
+.history-date { font-size:11px; color:var(--muted); }
+.status-badge { font-size:11px; padding:4px 10px; border-radius:999px; font-weight:600; }
+.status-pending { background:rgba(245,200,66,0.15); color:var(--gold); }
+.status-paid { background:rgba(46,204,113,0.15); color:var(--green); }
+.status-rejected { background:rgba(252,92,125,0.15); color:var(--accent2); }
+
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:rgba(10,10,15,0.95); backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; z-index:100; }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 0; cursor:pointer; color:var(--muted); transition:color 0.2s; gap:4px; }
+.nav-item.active { color:var(--accent); }
+.nav-icon { font-size:20px; }
+.nav-label { font-size:10px; text-transform:uppercase; letter-spacing:1px; }
+
+.page { display:none; } .page.active { display:block; }
+.toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--accent); color:#fff; padding:12px 24px; border-radius:999px; font-size:14px; font-weight:600; opacity:0; transition:all 0.3s; z-index:999; white-space:nowrap; pointer-events:none; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+.loading-screen { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; z-index:999; }
+.loading-logo { font-family:'Syne',sans-serif; font-weight:800; font-size:28px; background:linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.spinner { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.ads-grid { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+.ad-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all 0.2s; }
+.ad-card:active { transform:scale(0.98); border-color:var(--accent); }
+.ad-icon { width:48px; height:48px; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.ad-info { flex:1; }
+.ad-title { font-weight:600; font-size:14px; margin-bottom:3px; }
+.ad-sub { font-size:12px; color:var(--muted); }
+.ad-earn { font-family:'Syne',sans-serif; font-weight:700; color:var(--gold); font-size:15px; white-space:nowrap; }
+
+.profile-card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:24px; margin-bottom:16px; text-align:center; }
+.profile-avatar { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:28px; font-family:'Syne',sans-serif; font-weight:800; color:#fff; margin:0 auto 12px; }
+.profile-name { font-family:'Syne',sans-serif; font-weight:700; font-size:20px; margin-bottom:4px; }
+.profile-id { font-size:12px; color:var(--muted); }
+.profile-stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+.pstat { background:var(--card2); border-radius:12px; padding:14px; text-align:center; border:1px solid var(--border); }
+.pstat-val { font-family:'Syne',sans-serif; font-weight:700; font-size:20px; }
+.pstat-lbl { font-size:11px; color:var(--muted); margin-top:3px; }
+
+.empty-state { text-align:center; padding:40px 20px; color:var(--muted); }
+.empty-icon { font-size:40px; margin-bottom:10px; }
+
+#browserWarning { display:none; background: #fc5c7d; color: #fff; text-align: center; padding: 10px; font-size: 12px; font-weight: bold; position: sticky; top: 0; z-index: 1000; }
+</style>
+</head>
+<body>
+
+<div id="browserWarning">⚠️ ব্রাউজারে টেস্ট করা হচ্ছে! টেলিগ্রাম থেকে ওপেন করলে আসল আইডি ধরবে।</div>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-logo">⚡ Earn Zone</div>
+  <div class="spinner"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="container" id="app" style="display:none">
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="page-home">
+    <div class="header">
+      <div class="logo">⚡ Earn Zone</div>
+      <div class="user-avatar" id="avatarInitial">?</div>
+    </div>
+
+    <div class="balance-card">
+      <div class="balance-label">Your Balance</div>
+      <div class="balance-amount" id="balanceAmount">৳0</div>
+      <div class="balance-unit">Available to withdraw</div>
+      <div class="balance-stats">
+        <div class="stat-box">
+          <div class="stat-val" id="todayAds">0</div>
+          <div class="stat-lbl">Today</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="totalAds">0</div>
+          <div class="stat-lbl">Total Ads</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="referCount">0</div>
+          <div class="stat-lbl">Refers</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-header">
+        <span class="progress-title">Daily Ads Progress</span>
+        <span class="progress-count" id="progressText">0 / 200</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="watch-btn-wrap">
+      <button class="watch-btn" id="watchBtn" onclick="startWatchAd()">
+        <span>▶ Watch Ad</span>
+        <span class="earn-badge">+৳5</span>
+      </button>
+      <div class="cooldown-text" id="cooldownText"></div>
+    </div>
+
+    <div class="section-title"><span></span>Available Ads</div>
+    <div class="ads-grid" id="adsList">
+      <div class="empty-state"><div class="empty-icon">📭</div>Loading ads...</div>
+    </div>
+  </div>
+
+  <!-- REFERRAL PAGE -->
+  <div class="page" id="page-refer">
+    <div class="header"><div class="logo">👥 Referral</div></div>
+
+    <div class="ref-card">
+      <div class="section-title"><span></span>Referral Progress</div>
+      <div class="ref-progress">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:13px;color:var(--muted)">Invited Friends</span>
+          <span id="refProgressText" style="font-size:13px;font-weight:600;color:var(--gold)">0 / 5</span>
+        </div>
+        <div class="ref-bar"><div class="ref-fill" id="refFill" style="width:0%"></div></div>
+      </div>
+      <p class="ref-note">Invite <b>5 friends</b> to unlock the <b>Withdraw</b> feature.</p>
+    </div>
+
+    <div class="ref-card">
+      <div class="section-title"><span></span>Your Referral Link</div>
+      <div class="ref-link-box">
+        <div class="ref-link-text" id="refLinkText">Loading...</div>
+        <button class="copy-btn" onclick="copyRefLink()">Copy</button>
+      </div>
+      <p class="ref-note">Share this link to your friends via Telegram!</p>
+    </div>
+
+    <div class="section-title"><span></span>Your Referrals</div>
+    <div id="refList">
+      <div class="empty-state"><div class="empty-icon">👥</div><p>No referrals yet</p></div>
+    </div>
+  </div>
+
+  <!-- WITHDRAW PAGE -->
+  <div class="page" id="page-withdraw">
+    <div class="header"><div class="logo">💸 Withdraw</div></div>
+
+    <div class="withdraw-card">
+      <div class="withdraw-locked" id="withdrawLocked">
+        <div class="lock-icon">🔒</div>
+        <div class="lock-text">Withdraw is locked.<br>Invite <b>5 friends</b> to unlock this feature.</div>
+      </div>
+      <div class="withdraw-form" id="withdrawForm">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Minimum withdrawal: <b style="color:var(--gold)">৳200</b></p>
+        <div class="input-group">
+          <label class="input-label">Amount (৳)</label>
+          <input class="input-field" type="number" id="wdAmount" placeholder="Enter amount (min ৳200)" min="200"/>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Bkash Number</label>
+          <input class="input-field" type="tel" id="wdBkash" placeholder="01XXXXXXXXX"/>
+        </div>
+        <button class="withdraw-btn" onclick="submitWithdraw()">💸 Submit Request</button>
+      </div>
+    </div>
+
+    <div class="section-title"><span></span>Withdrawal History</div>
+    <div class="history-list" id="historyList">
+      <div class="empty-state"><div class="empty-icon">📋</div><p>No withdrawals yet</p></div>
+    </div>
+  </div>
+
+  <!-- PROFILE PAGE -->
+  <div class="page" id="page-profile">
+    <div class="header"><div class="logo">👤 Profile</div></div>
+    <div class="profile-card">
+      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div class="profile-name" id="profileName">Loading...</div>
+      <div class="profile-id" id="profileId">ID: ...</div>
+      <div class="profile-stats">
+        <div class="pstat"><div class="pstat-val" id="pBalance">৳0</div><div class="pstat-lbl">Balance</div></div>
+        <div class="pstat"><div class="pstat-val" id="pTotalAds">0</div><div class="pstat-lbl">Total Ads</div></div>
+        <div class="pstat"><div class="pstat-val" id="pRefers">0</div><div class="pstat-lbl">Referrals</div></div>
+        <div class="pstat"><div class="pstat-val" id="pEarned">৳0</div><div class="pstat-lbl">Total Earned</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="showPage('home',this)"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+  <div class="nav-item" onclick="showPage('refer',this)"><div class="nav-icon">👥</div><div class="nav-label">Refer</div></div>
+  <div class="nav-item" onclick="showPage('withdraw',this)"><div class="nav-icon">💸</div><div class="nav-label">Withdraw</div></div>
+  <div class="nav-item" onclick="showPage('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></div>
+</div>
+
+<!-- Firebase & Telegram Logic -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, update, push, onValue, increment }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCGqA4NAwLlVuiJ3STGHVAK-NTUChVIa1g",
+  authDomain: "telegram-loop-earn.firebaseapp.com",
+  databaseURL: "https://telegram-loop-earn-default-rtdb.firebaseio.com",
+  projectId: "telegram-loop-earn",
+  storageBucket: "telegram-loop-earn.firebasestorage.app",
+  messagingSenderId: "471885155168",
+  appId: "1:471885155168:web:db96e8b861c4cc40d42c05"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const tg = window.Telegram?.WebApp;
+tg?.expand();
+tg?.ready();
+
+let currentUser = null;
+let userData = null;
+let adsLinks = [];
+
+const EARN_PER_AD = 5;
+const MAX_DAILY_ADS = 200;
+const MIN_WITHDRAW = 200;
+const MIN_REFER_FOR_WITHDRAW = 5;
+
+// আপনার বটের নাম এবং মিনি অ্যাপের Short Name
+const BOT_USERNAME = 'EARN_WITH_FACK_BOT';
+const APP_SHORT_NAME = 'app'; 
+
+async function init() {
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    currentUser = tg.initDataUnsafe.user;
+  } else {
+    document.getElementById('browserWarning').style.display = 'block';
+    let testId = localStorage.getItem('test_id');
+    if(!testId){
+      testId = "TEST_" + Math.floor(Math.random() * 9000000);
+      localStorage.setItem('test_id', testId);
+    }
+    currentUser = { id: testId, first_name: 'Test', last_name: 'User' };
+  }
+
+  // Mini App এর ডাইরেক্ট রেফারেল প্যারামিটার ধরার কোড
+  let startParam = tg?.initDataUnsafe?.start_param; 
+  if (!startParam) {
+    startParam = new URLSearchParams(window.location.search).get('tgWebAppStartParam') || new URLSearchParams(window.location.search).get('startapp');
+  }
+  
+  await loadOrCreateUser(startParam);
+  await loadAds();
+  updateUI();
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+async function loadOrCreateUser(refCode) {
+  const userId = String(currentUser.id);
+  const userRef = ref(db, `users/${userId}`);
+  const snap = await get(userRef);
+  
+  if (!snap.exists()) {
+    const todayStr = new Date().toISOString().slice(0,10);
+    const newUser = {
+      id: userId,
+      name: (currentUser.first_name || '') + ' ' + (currentUser.last_name || ''),
+      balance: 0,
+      totalEarned: 0,
+      totalAds: 0,
+      todayAds: 0,
+      todayDate: todayStr,
+      referredBy: refCode || null,
+      referCount: 0,
+      joinedAt: Date.now(),
+      withdrawLocked: true
+    };
+    await set(userRef, newUser);
+
+    if (refCode && refCode !== userId) {
+      const refUserRef = ref(db, `users/${refCode}`);
+      const refSnap = await get(refUserRef);
+      if (refSnap.exists()) {
+        const refData = refSnap.val();
+        const newCount = (refData.referCount || 0) + 1;
+        const updates = { referCount: newCount };
+        if (newCount >= MIN_REFER_FOR_WITHDRAW) updates.withdrawLocked = false;
+        await update(refUserRef, updates);
+        await push(ref(db, `referrals/${refCode}`), { userId, name: newUser.name, joinedAt: Date.now() });
+      }
+    }
+    userData = newUser;
+  } else {
+    userData = snap.val();
+    const todayStr = new Date().toISOString().slice(0,10);
+    if (userData.todayDate !== todayStr) {
+      await update(userRef, { todayAds: 0, todayDate: todayStr });
+      userData.todayAds = 0;
+      userData.todayDate = todayStr;
+    }
+  }
+}
+
+async function loadAds() {
+  const snap = await get(ref(db, 'ads'));
+  if (snap.exists()) {
+    adsLinks = Object.entries(snap.val()).map(([id,v]) => ({id,...v})).filter(a=>a.active!==false);
+  }
+}
+
+function updateUI() {
+  if (!userData) return;
+  const initial = (userData.name || 'U').trim()[0].toUpperCase();
+  document.getElementById('avatarInitial').textContent = initial;
+  document.getElementById('profileAvatar').textContent = initial;
+  document.getElementById('profileName').textContent = userData.name || 'User';
+  document.getElementById('profileId').textContent = 'ID: ' + userData.id;
+  
+  const bal = userData.balance || 0;
+  document.getElementById('balanceAmount').textContent = '৳' + bal;
+  document.getElementById('pBalance').textContent = '৳' + bal;
+  document.getElementById('pTotalAds').textContent = userData.totalAds || 0;
+  document.getElementById('pRefers').textContent = userData.referCount || 0;
+  document.getElementById('pEarned').textContent = '৳' + (userData.totalEarned || 0);
+  
+  const todayAds = userData.todayAds || 0;
+  document.getElementById('todayAds').textContent = todayAds;
+  document.getElementById('totalAds').textContent = userData.totalAds || 0;
+  document.getElementById('referCount').textContent = userData.referCount || 0;
+  document.getElementById('progressText').textContent = todayAds + ' / ' + MAX_DAILY_ADS;
+  document.getElementById('progressFill').style.width = Math.min(100, (todayAds/MAX_DAILY_ADS)*100) + '%';
+  
+  const watchBtn = document.getElementById('watchBtn');
+  if (todayAds >= MAX_DAILY_ADS) {
+    watchBtn.classList.add('disabled');
+    document.getElementById('cooldownText').textContent = '⏰ Daily limit reached. Come back tomorrow!';
+  } else {
+    watchBtn.classList.remove('disabled');
+    document.getElementById('cooldownText').textContent = '';
+  }
+
+  renderAdsList();
+  
+  // Telegram Direct App Link Generation
+  const refLink = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=${userData.id}`;
+  document.getElementById('refLinkText').textContent = refLink;
+  
+  const refCount = userData.referCount || 0;
+  document.getElementById('refProgressText').textContent = refCount + ' / 5';
+  document.getElementById('refFill').style.width = Math.min(100,(refCount/5)*100) + '%';
+  loadReferrals();
+  
+  if (userData.withdrawLocked === false || refCount >= MIN_REFER_FOR_WITHDRAW) {
+    document.getElementById('withdrawLocked').style.display = 'none';
+    document.getElementById('withdrawForm').classList.add('visible');
+  }
+  loadWithdrawHistory();
+}
+
+function renderAdsList() {
+  const container = document.getElementById('adsList');
+  if (!adsLinks.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No ads available right now</p></div>';
+    return;
+  }
+  const icons = ['📺','🎬','📱','💎','🌟','🎯','🔥','⚡'];
+  container.innerHTML = adsLinks.map((ad,i) => `
+    <div class="ad-card" onclick="startAdLink('${ad.url || ad.link}')">
+      <div class="ad-icon">${icons[i%icons.length]}</div>
+      <div class="ad-info">
+        <div class="ad-title">${ad.title || 'Watch & Earn'}</div>
+        <div class="ad-sub">Click to watch and earn</div>
+      </div>
+      <div class="ad-earn">+৳${EARN_PER_AD}</div>
+    </div>
+  `).join('');
+}
+
+async function loadReferrals() {
+  const snap = await get(ref(db, `referrals/${userData.id}`));
+  const container = document.getElementById('refList');
+  if (!snap.exists()) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>No referrals yet</p></div>';
+    return;
+  }
+  const refs = Object.values(snap.val());
+  container.innerHTML = `<div class="history-list">` + refs.map(r => `
+    <div class="history-item">
+      <div class="history-left">
+        <div style="font-weight:600;font-size:14px">${r.name || 'User'}</div>
+        <div class="history-date">${new Date(r.joinedAt).toLocaleDateString()}</div>
+      </div>
+      <span class="status-badge status-paid">✓ Joined</span>
+    </div>
+  `).join('') + `</div>`;
+}
+
+async function loadWithdrawHistory() {
+  const snap = await get(ref(db, `withdrawals/${userData.id}`));
+  const container = document.getElementById('historyList');
+  if (!snap.exists()) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No withdrawals yet</p></div>';
+    return;
+  }
+  const items = Object.values(snap.val()).reverse();
+  container.innerHTML = `<div class="history-list">` + items.map(w => `
+    <div class="history-item">
+      <div class="history-left">
+        <div class="history-amount" style="color:var(--gold)">৳${w.amount}</div>
+        <div class="history-date">${w.bkash} · ${new Date(w.requestedAt).toLocaleDateString()}</div>
+      </div>
+      <span class="status-badge status-${w.status || 'pending'}">${w.status==='paid'?'✓ Paid':w.status==='rejected'?'✗ Rejected':'⏳ Pending'}</span>
+    </div>
+  `).join('') + `</div>`;
+}
+
+window.startWatchAd = async function() {
+  if (!userData || (userData.todayAds || 0) >= MAX_DAILY_ADS) {
+    showToast('Daily limit reached!'); return;
+  }
+  if (!adsLinks.length) { showToast('No ads available right now'); return; }
+  const ad = adsLinks[Math.floor(Math.random() * adsLinks.length)];
+  window.startAdLink(ad.url || ad.link);
+};
+
+window.startAdLink = async function(link) {
+  if (!userData || (userData.todayAds || 0) >= MAX_DAILY_ADS) {
+    showToast('Daily limit reached!'); return;
+  }
+  await update(ref(db, `users/${userData.id}`), {
+    adPending: true,
+    adStartTime: Date.now()
+  });
+  sessionStorage.setItem('adStartTime', Date.now());
+  sessionStorage.setItem('userId', userData.id);
+  window.location.href = link;
+};
+
+window.copyRefLink = function() {
+  const link = document.getElementById('refLinkText').textContent;
+  navigator.clipboard.writeText(link).then(() => showToast('Link copied!')).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = link; document.body.appendChild(el); el.select(); document.execCommand('copy');
+    document.body.removeChild(el); showToast('Link copied!');
+  });
+};
+
+window.submitWithdraw = async function() {
+  const amount = parseInt(document.getElementById('wdAmount').value);
+  const bkash = document.getElementById('wdBkash').value.trim();
+  
+  if (!amount || amount < MIN_WITHDRAW) { showToast('Minimum ৳' + MIN_WITHDRAW); return; }
+  if (!bkash || bkash.length < 11) { showToast('Enter valid Bkash number'); return; }
+  if (amount > (userData.balance || 0)) { showToast('Insufficient balance'); return; }
+  
+  const wRef = ref(db, `withdrawals/${userData.id}`);
+  await push(wRef, { amount, bkash, status:'pending', requestedAt: Date.now(), userId: userData.id, name: userData.name });
+  await update(ref(db, `users/${userData.id}`), { balance: increment(-amount) });
+  userData.balance -= amount;
+  
+  document.getElementById('wdAmount').value = '';
+  document.getElementById('wdBkash').value = '';
+  showToast('Withdrawal request submitted!');
+  updateUI();
+};
+
+window.showPage = function(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  el.classList.add('active');
+};
+
+window.showToast = function(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+};
+
+init().catch(console.error);
+</script>
+</body>
+</html>
