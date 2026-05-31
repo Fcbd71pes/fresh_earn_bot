@@ -1,1 +1,0 @@
-# fresh_earn_bot
